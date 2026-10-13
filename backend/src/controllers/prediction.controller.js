@@ -6,17 +6,24 @@ import {prediction} from '../models/prediction.model.js';
 
 
 const createPrediction = AsyncHandler(async (req, res) => {
-    const { type, inputData, result, status } = req.body
+    const { type, inputData, result, status, stage, predictedDisease, parentPrediction } = req.body
 
     if (!type) {
         throw new ApiError(400, 'Prediction type is required')
     }
 
-    const userId = req.newUser?._id || req.user?._id
+    const userId = req.newUser?._id
+
+    if (!userId) {
+        throw new ApiError(401, 'Unauthorized request')
+    }
 
     const predictionDoc = await prediction.create({
         user: userId,
         predictionType: type,
+        stage,
+        predictedDisease,
+        parentPrediction,
         inputData: inputData || {},
         result: result || {},
         status: status || 'completed'
@@ -36,7 +43,9 @@ const getMyPredictions = AsyncHandler(async (req, res) => {
         throw new ApiError(401, 'Unauthorized request')
     }
 
-    const predictionsList = await prediction.find({ user: userId }).sort({ createdAt: -1 })
+    const predictionsList = await prediction.find({
+         user: userId 
+        }).sort({ createdAt: -1 })
 
     return res
         .status(200)
